@@ -1,18 +1,18 @@
 # aws-connect-with-active-directory
 
-**Evaluate for Amazon Connect** is a Agent Evaluation product that has been integration with Amazon Connect. This repository contains the templates, as well as other supporting materials, that can be used to deploy everything that is needed to make available our Quality Monitoring product to your customers who are using the Amazon Connect AWS product
+**Evaluate for Amazon Connect** is a Agent Evaluation product that has been integration with **Amazon Connect**. For a fuller explanation of our **Evaluate** please click [here](http://www.qualtrak.com). This GitHub OSS repository contains two templates that must both be deployed together.  We have also included supporting materials whcih can be found near the end of this file.  The order of deployment is import.  This is covered shortly.  Deploying both templates will stand up everything required for your customers using **Amazon Connect** to have a Quality Monitoring product.
 
 The use-case that these templates deal with fits this configuration:
-- Your customer is using Amazon Connect
+- Your customer is using **Amazon Connect**
 - Your customer is using Active Directory
 - Your customer has already set up a Kinesis Stream that streams the CTRs to either RedShift, S3 or other.
 
 ## CloudFormation Templates:
 
-- `KStreamToKFirehoseToES` - This template stands up Kinesis Firehose to the current Kinesis stream which streams the CTRs to an ElasticSearch document database
+- `KStreamToKFirehoseToES` - This template stands up a Kinesis Firehose that captures the CTRs streamed from the current Kinesis stream, and then stores these CTRs in an ElasticSearch search engine.
 - `E4AC` - This template stands up an EC2 instance with our product installed along with and RDS (MSSQLServer 2016 Express Edition) and S3.
 
-Each template will prompt the user for various information. These prompts have been documented below as properties.
+Each template will prompt the user for various information. These prompts have been documented below as properties.  The order of deployment is important.  First, you must deploy `KStreamToKFirehoseToES` then you must deploy `KStreamToKFirehoseToES`.
 
 ## The `KStreamToKFirehoseToES` CFN Template:
 
@@ -29,7 +29,7 @@ Each template will prompt the user for various information. These prompts have b
 - `What name to use?` - This is the name for the ElasticSearch Domain
 - `Allow access from?` - VPC CIDR Block (eg 10.0.0.0/16)
 
-## The `E4AC` Template
+## The `E4AC` CFN Template
 
 This template uses `E4AC-ES-DomainName` & `E4AC-S3Bucket` **Export** values from the **KStreamToKFirehoseToES** Template.
 
