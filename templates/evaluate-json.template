@@ -23,8 +23,7 @@
         "KeyName"          : {
             "Description" : "Name of an existing EC2 KeyPair",
             "Type"        : "AWS::EC2::KeyPair::KeyName",
-            "Default"     : "east1-ec2",
-            "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+            "ConstraintDescription" : "must be the name of an existing EC2 KeyPair"
         },
         "InstanceType"     : {
             "Description" : "Amazon EC2 instance type",
@@ -83,7 +82,6 @@
             "ConstraintDescription" : "must be a valid EC2 instance type."
         },
         "DomainDNSName"    : {
-            "Default" : "company.local",
             "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. corp.example.com",
             "Type"        : "String",
             "MinLength"   : "3",
@@ -91,17 +89,15 @@
             "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
         },
         "DBEvaluateUser"   : {
-            "Default" : "EvaluateUser",
             "NoEcho"  : "false",
             "Description" : "The database non-admin account username",
             "Type"        : "String",
             "MinLength"   : "1",
             "MaxLength"   : "16",
             "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
-            "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+            "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters"
         },
         "DBEvaluatePassword" : {
-            "Default" : "p4ssword123",
             "NoEcho"  : "true",
             "Description" : "The database non-admin account password",
             "Type"        : "String",
@@ -111,26 +107,22 @@
             "ConstraintDescription" : "must contain only alphanumeric characters."
         },
         "DomainIPs"          : {
-            "Default" : "172.0.0.10,172.0.0.20",
             "NoEcho"  : "false",
             "Description" : "Comma separated list of IP addresses of AD Domain",
             "Type"        : "String"
         },
         "DomainAdminUser"    : {
-            "Default" : "Administrator",
             "Description" : "User name for the account that will be added as Domain Administrator. This is separate from the default \"EC2 Administrator\" account",
             "Type"        : "String"
         },
         "DomainAdminPassword" : {
-            "Default" : "p4ssword123",
             "NoEcho"  : "true",
             "Description" : "Password of the Domain Administrator's account. This is separate from the default \"EC2 Administrator\" account",
             "Type"        : "String"
         },
         "DomainNetBiosName"   : {
             "Description" : "Netbios name for the domain, e.g. MYCOMPANY",
-            "Type"        : "String",
-            "Default"     : "company"
+            "Type"        : "String"
         },
         "VpcId"               : {
             "Description" : "VPC Id",
@@ -141,24 +133,36 @@
             "Type"        : "AWS::EC2::Subnet::Id"
         },
         "DBAdminUser"         : {
-            "Default" : "EvaluateAdmin",
             "NoEcho"  : "false",
             "Description" : "The database admin account username",
             "Type"        : "String",
             "MinLength"   : "1",
             "MaxLength"   : "16",
             "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
-            "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+            "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters"
         },
         "DBAdminPassword"     : {
-            "Default" : "p4ssword123",
             "NoEcho"  : "true",
             "Description" : "The database admin account password",
             "Type"        : "String",
             "MinLength"   : "8",
             "MaxLength"   : "41",
             "AllowedPattern" : "[a-zA-Z0-9].*",
-            "ConstraintDescription" : "must contain only alphanumeric characters."
+            "ConstraintDescription" : "must contain only alphanumeric characters"
+        },
+        "S3Bucket" : {
+            "Type" : "String"
+        },
+        "ESDomain" : {
+            "Type" : "String"
+        },
+        "S3EvaluateBucket" : {
+            "Type" : "String",
+            "Description" : "The name of a new bucket that will be used to store Attachments. The actual name will be evaluate-<AccountId>-<whatever-you-enter-here>, e.g. evaluate-344201342714-myNewBucket",
+            "MinLength"   : "8",
+            "MaxLength"   : "41",
+            "AllowedPattern" : "[a-z0-9].*",
+            "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric, lowercase characters"
         }
     },
     "Metadata"                 : {     
@@ -192,7 +196,8 @@
                         "default" : "S3 Configuration"
                     },
                     "Parameters" : [                      
-                        "RetainEvaluateS3"
+                        "RetainEvaluateS3",
+                        "S3EvaluateBucket"
                     ]
                 },
                 {
@@ -221,8 +226,8 @@
                 "RDPFrom"      : {
                     "default" : "RDP from"
                 },
-                "ESDomainName"  : {
-                    "default" : "What should ElasticSearch domain be called?"
+                "ESDomain"  : {
+                    "default" : "What is the endpoint of ElasticSearch?"
                 },               
                 "RetainEvaluateS3" : {
                     "default" : "Retain Evaluate S3?"
@@ -250,124 +255,11 @@
                 },
                 "DomainAdminPassword" : {
                     "default" : "Domain Administrator password"
+                },
+                "S3EvaluateBucket" : {
+                    "default" : "Name of new bucket"
                 }
             }
-        }
-    },
-	"Rules"                    : {
-        "DBAdminPasswordParameterName" : {
-            "Assertions" : [
-                {
-                    "Assert" : {
-                        "Fn::Not" : [
-                            {
-                                "Fn::Equals" : [
-                                    {
-                                        "Ref" : "DBAdminPassword"
-                                    },
-                                    "p4ssword123"
-                                ]
-                            }
-                        ]
-                    },
-                    "AssertDescription" : "Evaluate for Amazon Connect paramters cannot be defaults"
-                }
-            ]
-        },
-        "DomainAdminPasswordParameterName" : {
-            "Assertions" : [
-                {
-                    "Assert" : {
-                        "Fn::Not" : [
-                            {
-                                "Fn::Equals" : [
-                                    {
-                                        "Ref" : "DomainAdminPassword"
-                                    },
-                                    "p4ssword123"
-                                ]
-                            }
-                        ]
-                    },
-                    "AssertDescription" : "Evaluate for Amazon Connect paramters cannot be defaults"
-                }
-            ]
-        },
-		"DBEvaluatePasswordParameterName" : {
-            "Assertions" : [
-                {
-                    "Assert" : {
-                        "Fn::Not" : [
-                            {
-                                "Fn::Equals" : [
-                                    {
-                                        "Ref" : "DBEvaluatePassword"
-                                    },
-                                    "p4ssword123"
-                                ]
-                            }
-                        ]
-                    },
-                    "AssertDescription" : "Evaluate for Amazon Connect paramters cannot be defaults"
-                }
-            ]
-        },
-		"DomainDNSNameParameterName" : {
-            "Assertions" : [
-                {
-                    "Assert" : {
-                        "Fn::Not" : [
-                            {
-                                "Fn::Equals" : [
-                                    {
-                                        "Ref" : "DomainDNSName"
-                                    },
-                                    "company.local"
-                                ]
-                            }
-                        ]
-                    },
-                    "AssertDescription" : "Evaluate for Amazon Connect paramters cannot be defaults"
-                }
-            ]
-        },
-		"DomainNetBiosNameParameterName" : {
-            "Assertions" : [
-                {
-                    "Assert" : {
-                        "Fn::Not" : [
-                            {
-                                "Fn::Equals" : [
-                                    {
-                                        "Ref" : "DomainNetBiosName"
-                                    },
-                                    "company"
-                                ]
-                            }
-                        ]
-                    },
-                    "AssertDescription" : "Evaluate for Amazon Connect paramters cannot be defaults"
-                }
-            ]
-        },
-		"DomainIPsParameterName" : {
-            "Assertions" : [
-                {
-                    "Assert" : {
-                        "Fn::Not" : [
-                            {
-                                "Fn::Equals" : [
-                                    {
-                                        "Ref" : "DomainIPs"
-                                    },
-                                    "172.0.0.10,172.0.0.20"
-                                ]
-                            }
-                        ]
-                    },
-                    "AssertDescription" : "Evaluate for Amazon Connect paramters cannot be defaults"
-                }
-            ]
         }
     },
     "Conditions"               : {
@@ -391,13 +283,13 @@
     "Mappings"                 : {
         "AWSRegion2AMI" : {
             "us-east-1" : {
-                "Windows2016DevAMI" : "ami-955081ef"
+                "Windows2016DevAMI" : "ami-bb43f2c1"
             },
             "eu-central-1" : {
-                "Windows2016DevAMI" : "ami-955081ef"
+                "Windows2016DevAMI" : "ami-bb43f2c1"
             },
             "ap-southeast-2" : {
-                "Windows2016DevAMI" : "ami-955081ef"
+                "Windows2016DevAMI" : "ami-bb43f2c1"
             }
         }
     },
@@ -609,7 +501,7 @@
                                                 [
                                                     "arn:aws:s3:::",
                                                     {
-                                                        "Fn::ImportValue" : "E4AC-S3Bucket"
+                                                        "Ref" : "S3Bucket"
                                                     }
                                                 ]
                                             ]
@@ -657,7 +549,7 @@
                                                 [
                                                     "arn:aws:s3:::",
                                                     {
-                                                        "Fn::ImportValue" : "E4AC-S3Bucket"
+                                                        "Ref" : "S3Bucket"
                                                     },
                                                     "/*"
                                                 ]
@@ -746,7 +638,7 @@
                                             "### Create environment variables...\n",
                                             "[Environment]::SetEnvironmentVariable(\"q-connect-s3\", \"",
                                             {
-                                                "Fn::ImportValue" : "E4AC-S3Bucket"
+                                                "Ref" : "S3Bucket"
                                             },
                                             "\", \"Machine\")\n",
                                             "[Environment]::SetEnvironmentVariable(\"q-evaluate-s3\", \"",
@@ -823,8 +715,8 @@
                                             },
                                             "\", \"Machine\")\n",
                                             "[Environment]::SetEnvironmentVariable(\"q-es-url\", \"",
-                                            {
-                                                "Fn::ImportValue" : "E4AC-ES-DomainName"
+                                            {                                               
+                                               "Ref" : "ESDomain"
                                             },
                                             "\", \"Machine\")\n",
                                             "[Environment]::SetEnvironmentVariable(\"q-deployment-id\", \"",
@@ -1096,7 +988,7 @@
                             },
                             "-",
                             {
-                                "Ref" : "AWS::StackName"
+                                "Ref" : "S3EvaluateBucket"
                             }
                         ]
                     ]
@@ -1133,7 +1025,7 @@
                             },
                             "-",
                             {
-                                "Ref" : "AWS::StackName"
+                                "Ref" : "S3EvaluateBucket"
                             }
                         ]
                     ]

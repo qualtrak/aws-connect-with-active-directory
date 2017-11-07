@@ -1,0 +1,423 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "This master template creates an infrastructure for Evaluate for Amazon Connect on AWS. **WARNING** This template creates EC2 instances and related resources. You will be billed for the AWS resources used if you create a stack from this template.",
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups" : [
+                {
+                    "Label" : {
+                        "default" : "EC2 Configuration"
+                    },
+                    "Parameters" : [
+                        "InstanceType",
+                        "KeyName",                        
+                        "RDPFrom",
+                        "VpcId",
+                        "SubnetId"                        
+                    ]
+                },
+                {
+                    "Label" : {
+                        "default" : "Amazon RDS Configuration"
+                    },
+                    "Parameters" : [
+                        "DBAdminUser",
+                        "DBAdminPassword",
+                        "DBEvaluateUser",
+                        "DBEvaluatePassword"
+                    ]
+                },
+                {
+                    "Label" : {
+                        "default" : "S3 Configuration"
+                    },
+                    "Parameters" : [                      
+                        "RetainEvaluateS3",
+                        "S3EvaluateBucket"
+                    ]
+                },
+                {
+                    "Label" : {
+                        "default" : "Active Directory Domain Configuration"
+                    },
+                    "Parameters" : [
+                        "DomainDNSName",
+                        "DomainIPs",
+                        "DomainNetBiosName",
+                        "DomainAdminUser",
+                        "DomainAdminPassword"                       
+                    ]
+                },
+                {
+                    "Label" : {
+                        "default" : "Amazon Connect Configuration"
+                    },
+                    "Parameters" : [                        
+                        "kinesisStreamRole",
+                        "S3Bucket",
+                        "kinesisStream"
+                    ]
+                },
+                {
+                    "Label" : {
+                        "default" : "ElasticSearch Configuration"
+                    },
+                    "Parameters" : [
+                        "ESDomain",
+                        "cidrBlock"
+                    ]
+                }
+            ],			 
+            "ParameterLabels" : {
+                "KeyName" : {
+                    "default" : "Which KeyPair"
+                },
+                "InstanceType" : {
+                    "default" : "What EC2 size"
+                },
+                "VpcId"        : {
+                    "default" : "Deploy to which VPC"
+                },
+                "SubnetId"        : {
+                    "default" : "Deploy to which subnet"
+                },
+                "RDPFrom"      : {
+                    "default" : "Restrict RDP from"
+                },
+                "ESDomainName"  : {
+                    "default" : "Name it?"
+                },               
+                "RetainEvaluateS3" : {
+                    "default" : "Retain Evaluate S3"
+                },
+                "DBEvaluateUser"   : {
+                    "default" : "Application username"
+                },
+                "DBEvaluatePassword" : {
+                    "default" : "Application password"
+                },
+                "DBAdminUser"        : {
+                    "default" : "Master username"
+                },
+                "DBAdminPassword"    : {
+                    "default" : "Master password"
+                },
+                "DomainDNSName"      : {
+                    "default" : "Directory name"
+                },
+                "DomainIPs"          : {
+                    "default" : "DNS addresses"
+                },
+                "DomainAdminUser"    : {
+                    "default" : "Administrator username"
+                },
+                "DomainNetBiosName" : {
+                    "default" : "NetBIOS name"
+                },
+                "DomainAdminPassword" : {
+                    "default" : "Administrator password"
+                },
+                "kinesisStream" : {
+                    "default" : "Which Stream to use"
+                },
+                "kinesisStreamRole" : {
+                    "default" : "Which Role to use"
+                },
+                "ESDomain"      : {
+                    "default" : "What name to use"
+                },
+                "S3Bucket"      : {
+                    "default" : "Where to write logs"
+                },
+                "cidrBlock"          : {
+                    "default" : "Allow access from"
+                },
+                "S3EvaluateBucket" : {
+                    "default" : "Name of new bucket"
+                }
+            }
+        }
+    },
+    "Parameters": {
+        "RetainEvaluateS3" : {
+            "Description" : "After you have deleted this Stack, do you want to retain or delete the Evaluate S3 where all your Evaluation Attachments are stored?",
+            "Default"     : "No",
+            "Type"        : "String",
+            "AllowedValues" : [
+                "Yes",
+                "No"
+            ],
+            "ConstraintDescription" : "must specify Yes or No."
+        },
+        "RDPFrom"          : {
+            "Description" : "Lockdown RDP access to the bastion host (default can be accessed from anywhere)",
+            "Type"        : "String",           
+            "AllowedPattern" : "\\d{1,3}([.]\\d{1,3}){3}/\\d{1,2}",
+            "ConstraintDescription" : "Must not be empty and must be a CIDR block, e.g. 172.0.48.28/32"
+        },
+        "KeyName"          : {
+            "Description" : "Name of an existing EC2 KeyPair",
+            "Type"        : "AWS::EC2::KeyPair::KeyName",          
+            "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+        },
+        "InstanceType"     : {
+            "Description" : "Amazon EC2 instance type",
+            "Type"        : "String",
+            "Default"     : "m4.large",
+            "AllowedValues" : [
+                "t2.medium",
+                "m1.small",
+                "m1.medium",
+                "m1.large",
+                "m1.xlarge",
+                "m2.xlarge",
+                "m2.2xlarge",
+                "m2.4xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "g2.2xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge",
+                "d2.xlarge",
+                "d2.2xlarge",
+                "d2.4xlarge",
+                "d2.8xlarge",
+                "hi1.4xlarge",
+                "hs1.8xlarge",
+                "cr1.8xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription" : "must be a valid EC2 instance type."
+        },
+        "DomainDNSName"    : {
+            "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. corp.example.com",
+            "Type"        : "String",          
+            "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+        },
+        "DBEvaluateUser"   : {
+            "Default" : "EvaluateUser",
+            "NoEcho"  : "false",
+            "Description" : "The database non-admin account username",
+            "Type"        : "String",           
+            "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+            "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric characters"
+        },
+        "DBEvaluatePassword" : {         
+            "NoEcho"  : "true",
+            "Description" : "The database non-admin account password",
+            "Type"        : "String",            
+            "AllowedPattern" : "[a-zA-Z0-9].*",
+            "ConstraintDescription" : "Must not be empty and must contain only alphanumeric characters"
+        },
+        "DomainIPs"          : {
+            "NoEcho"  : "false",
+            "Description" : "Comma separated list of IP addresses of AD Domain",
+            "Type"        : "String"
+        },
+        "DomainAdminUser"    : {
+            "Default" : "Administrator",
+            "Description" : "User name for the account that will be added as Domain Administrator. This is separate from the default \"EC2 Administrator\" account",
+            "Type"        : "String",
+            "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+            "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric characters"
+        },
+        "DomainAdminPassword" : {           
+            "NoEcho"  : "true",
+            "Description" : "Password of the Domain Administrator's account. This is separate from the default \"EC2 Administrator\" account",
+            "Type"        : "String"
+        },
+        "DomainNetBiosName"   : {
+            "Description" : "Netbios name for the domain, e.g. MYCOMPANY",
+            "Type"        : "String",
+            "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+            "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric characters"
+        },
+        "VpcId"               : {
+            "Description" : "VPC Id",
+            "Type"        : "AWS::EC2::VPC::Id"
+        },
+        "SubnetId"            : {
+            "Description" : "Subnet Id, must be same CIDR that was supplied when ElasticSearch was deployed",
+            "Type"        : "AWS::EC2::Subnet::Id"
+        },
+        "DBAdminUser"         : {
+            "Default" : "EvaluateAdmin",
+            "NoEcho"  : "false",
+            "Description" : "The database admin account username",
+            "Type"        : "String",
+            "MinLength"   : "1",
+            "MaxLength"   : "16",
+            "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+            "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric characters."
+        },
+        "DBAdminPassword"     : {           
+            "NoEcho"  : "true",
+            "Description" : "The database admin account password",
+            "Type"        : "String",            
+            "AllowedPattern" : "[a-zA-Z0-9].*",
+            "ConstraintDescription" : "Must not be empty and must contain only alphanumeric characters"
+        },
+        "kinesisStream" : {
+            "Type" : "String",
+            "AllowedPattern" : "[a-zA-Z0-9].*",
+            "Description" : "The name of your existing Kinesis Stream",
+            "ConstraintDescription" : "Must not be empty and must contain only alphanumeric characters"
+        },
+        "kinesisStreamRole" : {
+            "Type" : "String",
+            "AllowedPattern" : "[a-zA-Z0-9].*",
+            "Description" : "The name of your existing Kinesis Stream Role",
+            "ConstraintDescription" : "Must not be empty and must contain only alphanumeric characters"
+        },
+        "ESDomain"      : {
+            "Default" : "evaluate",
+            "Type"    : "String",
+            "Description" : "This is the name for the ElasticSearch Domain"
+        },
+        "cidrBlock"          : {
+            "Description" : "VPC CIDR Block (eg 10.0.0.0/16) from which ElasticSearch can be accessed from",
+            "Type"        : "String",
+            "AllowedPattern" : "\\d{1,3}([.]\\d{1,3}){3}/\\d{1,2}",
+            "ConstraintDescription" : "Must not be empty and must be a CIDR block, 172.0.48.28/32"
+        },
+        "S3Bucket"      : {
+            "Description" : "The name of the S3 Bucket that Amazon Connect uses to store its call recordings",
+            "Type"        : "String",
+            "AllowedPattern" : "[a-zA-Z0-9].*",
+            "ConstraintDescription" : "Must not be empty and must be the name of an existing S3 bucket."
+        },
+        "S3EvaluateBucket" : {
+            "Type" : "String",
+            "Description" : "The name of a new bucket that will be used to store Attachments. The actual name will be evaluate-<AccountId>-<whatever-you-enter-here>, e.g. evaluate-344201342714-myNewBucket",
+            "MinLength"   : "8",
+            "MaxLength"   : "41",
+            "AllowedPattern" : "[a-z0-9].*",
+            "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric, lowercase characters"
+        }
+    },  
+    "Resources": {
+        "evaluatestack": {
+            "DependsOn": "connectstack",
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": "http://s3.amazonaws.com/Qualtrak/submodules/quickstart-qualtrak-e4ac/templates/evaluate-json.template"
+                },
+                "Parameters": {                    
+                    "KeyName": {
+                        "Ref": "KeyName"
+                    },
+                    "RetainEvaluateS3" : {
+                        "Ref" : "RetainEvaluateS3"
+                    },
+                    "RDPFrom" : {
+                        "Ref" : "RDPFrom"
+                    },
+                    "InstanceType" : {
+                        "Ref" : "InstanceType"
+                    },
+                    "DomainDNSName" : {
+                        "Ref" : "DomainDNSName"
+                    },
+                    "DBEvaluateUser" : {
+                        "Ref" : "DBEvaluateUser"
+                    },
+                    "DBEvaluatePassword" : {
+                        "Ref" : "DBEvaluatePassword"
+                    },
+                    "DomainIPs" : {
+                        "Ref" : "DomainIPs"
+                    },
+                    "DomainAdminUser" : {
+                        "Ref" : "DomainAdminUser"
+                    },
+                    "DomainAdminPassword" : {
+                        "Ref" : "DomainAdminPassword"
+                    },
+                    "DomainNetBiosName" : {
+                        "Ref" : "DomainNetBiosName"
+                    },
+                    "VpcId" : {
+                        "Ref" : "VpcId"
+                    },
+                    "SubnetId" : {
+                        "Ref" : "SubnetId"
+                    },
+                    "DBAdminUser" : {
+                        "Ref" : "DBAdminUser"
+                    },
+                    "DBAdminPassword" : {
+                        "Ref" : "DBAdminPassword"
+                    },
+                    "S3Bucket" : {
+                        "Fn::GetAtt": [
+                            "connectstack",
+                            "Outputs.S3BucketName"
+                        ]
+                    },
+                    "ESDomain" : {
+                        "Fn::GetAtt": [
+                            "connectstack",
+                            "Outputs.ESDomainEndpoint"
+                        ]
+                    },
+                    "S3EvaluateBucket" : {
+                        "Ref" : "S3EvaluateBucket"
+                    }
+                }
+            }
+        },
+        "connectstack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": "http://s3.amazonaws.com/Qualtrak/submodules/quickstart-qualtrak-e4ac/templates/amazonconnect-json.template"
+                },
+                "Parameters": {                    
+                    "kinesisStream": {
+                        "Ref": "kinesisStream"
+                    },
+                    "kinesisStreamRole": {
+                        "Ref": "kinesisStreamRole"
+                    },
+                    "ESDomain": {
+                        "Ref": "ESDomain"
+                    },
+                    "cidrBlock": {
+                        "Ref": "cidrBlock"
+                    },
+                    "S3Bucket": {
+                        "Ref": "S3Bucket"
+                    }
+                }
+            }
+        }              
+    }
+}

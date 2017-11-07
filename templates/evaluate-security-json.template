@@ -1,0 +1,139 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description"              : "This template creates the appropriate resources that are required by the EC2 instance",
+    "Parameters"               : {       
+        "RDPFrom"          : {
+            "Description" : "Lockdown RDP access to the bastion host (default can be accessed from anywhere)",
+            "Type"        : "String",
+            "MinLength"   : "9",
+            "MaxLength"   : "18",
+            "AllowedPattern" : "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription" : "must be a valid CIDR range of the form x.x.x.x/x."
+        },       
+        "VpcId"               : {
+            "Description" : "VPC Id",
+            "Type"        : "AWS::EC2::VPC::Id"
+        },
+        "SubnetId"            : {
+            "Description" : "Subnet Id, must be same CIDR that was supplied when ElasticSearch was deployed",
+            "Type"        : "AWS::EC2::Subnet::Id"
+        }
+    },
+    "Metadata"                 : {     
+        "AWS::CloudFormation::Interface" : {		  		 
+            "ParameterGroups" : [
+                {
+                    "Label" : {
+                        "default" : "EC2 Remote Access"
+                    },
+                    "Parameters" : [                        
+                        "RDPFrom"
+                    ]
+                }
+            ],			 
+            "ParameterLabels" : {               
+                "RDPFrom"      : {
+                    "default" : "RDP from"
+                }               
+            }
+        }
+    },
+    "Resources"                : {      
+        "webPortAddress" : {
+            "Type" : "AWS::EC2::EIP",
+            "Properties" : {
+                "Domain" : "vpc"
+            }
+        },
+        "associateWebPort" : {
+            "Type" : "AWS::EC2::EIPAssociation",
+            "Properties" : {
+                "AllocationId" : {
+                    "Fn::GetAtt" : [
+                        "webPortAddress",
+                        "AllocationId"
+                    ]
+                },
+                "NetworkInterfaceId" : {
+                    "Ref" : "webXface"
+                }
+            }
+        },
+        "webXface"         : {
+            "Type" : "AWS::EC2::NetworkInterface",
+            "Properties" : {
+                "SubnetId" : {
+                    "Ref" : "SubnetId"
+                },
+                "Description" : "Interface for web traffic",
+                "GroupSet"    : [
+                    {
+                        "Ref" : "webSecurityGroup"
+                    }
+                ],
+                "SourceDestCheck" : "true",
+                "Tags"            : [
+                    {
+                        "Key" : "APP-NAME",
+                        "Value" : "E4AC"
+                    },
+                    {
+                        "Key" : "VENDOR",
+                        "Value" : "Qualtrak"
+                    },
+                    {
+                        "Key" : "STAGE",
+                        "Value" : "Production"
+                    }
+                ]
+            }
+        },
+        "webSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "VpcId" : {
+                    "Ref" : "VpcId"
+                },
+                "Tags"  : [
+                    {
+                        "Key" : "APP-NAME",
+                        "Value" : "E4AC"
+                    },
+                    {
+                        "Key" : "VENDOR",
+                        "Value" : "Qualtrak"
+                    },
+                    {
+                        "Key" : "STAGE",
+                        "Value" : "Production"
+                    }
+                ],
+                "GroupDescription" : "Enable HTTP access via user defined port",
+                "SecurityGroupIngress" : [
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "80",
+                        "ToPort"     : "80",
+                        "CidrIp"     : "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "443",
+                        "ToPort"     : "443",
+                        "CidrIp"     : "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol" : "tcp",
+                        "FromPort"   : "3389",
+                        "ToPort"     : "3389",
+                        "CidrIp"     : {
+                            "Ref" : "RDPFrom"
+                        }
+                    }
+                ]
+            }
+        }    
+    },
+    "Outputs"                  : {  
+    }
+}
