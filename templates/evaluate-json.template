@@ -163,6 +163,12 @@
             "MaxLength"   : "41",
             "AllowedPattern" : "[a-z0-9].*",
             "ConstraintDescription" : "Must not be empty, must begin with a letter and contain only alphanumeric, lowercase characters"
+        },
+        "webXface" : {
+            "Type" : "String"
+        },
+        "ElasticIp" : {
+            "Type" : "String"
         }
     },
     "Metadata"                 : {     
@@ -324,101 +330,7 @@
                 },
                 "BackupRetentionPeriod" : "0"
             }
-        },
-        "webPortAddress" : {
-            "Type" : "AWS::EC2::EIP",
-            "Properties" : {
-                "Domain" : "vpc"
-            }
-        },
-        "associateWebPort" : {
-            "Type" : "AWS::EC2::EIPAssociation",
-            "Properties" : {
-                "AllocationId" : {
-                    "Fn::GetAtt" : [
-                        "webPortAddress",
-                        "AllocationId"
-                    ]
-                },
-                "NetworkInterfaceId" : {
-                    "Ref" : "webXface"
-                }
-            }
-        },
-        "webXface"         : {
-            "Type" : "AWS::EC2::NetworkInterface",
-            "Properties" : {
-                "SubnetId" : {
-                    "Ref" : "SubnetId"
-                },
-                "Description" : "Interface for web traffic",
-                "GroupSet"    : [
-                    {
-                        "Ref" : "webSecurityGroup"
-                    }
-                ],
-                "SourceDestCheck" : "true",
-                "Tags"            : [
-                    {
-                        "Key" : "APP-NAME",
-                        "Value" : "E4AC"
-                    },
-                    {
-                        "Key" : "VENDOR",
-                        "Value" : "Qualtrak"
-                    },
-                    {
-                        "Key" : "STAGE",
-                        "Value" : "Production"
-                    }
-                ]
-            }
-        },
-        "webSecurityGroup" : {
-            "Type" : "AWS::EC2::SecurityGroup",
-            "Properties" : {
-                "VpcId" : {
-                    "Ref" : "VpcId"
-                },
-                "Tags"  : [
-                    {
-                        "Key" : "APP-NAME",
-                        "Value" : "E4AC"
-                    },
-                    {
-                        "Key" : "VENDOR",
-                        "Value" : "Qualtrak"
-                    },
-                    {
-                        "Key" : "STAGE",
-                        "Value" : "Production"
-                    }
-                ],
-                "GroupDescription" : "Enable HTTP access via user defined port",
-                "SecurityGroupIngress" : [
-                    {
-                        "IpProtocol" : "tcp",
-                        "FromPort"   : "80",
-                        "ToPort"     : "80",
-                        "CidrIp"     : "0.0.0.0/0"
-                    },
-                    {
-                        "IpProtocol" : "tcp",
-                        "FromPort"   : "443",
-                        "ToPort"     : "443",
-                        "CidrIp"     : "0.0.0.0/0"
-                    },
-                    {
-                        "IpProtocol" : "tcp",
-                        "FromPort"   : "3389",
-                        "ToPort"     : "3389",
-                        "CidrIp"     : {
-                            "Ref" : "RDPFrom"
-                        }
-                    }
-                ]
-            }
-        },
+        },        
         "rootRole"         : {
             "Type" : "AWS::IAM::Role",
             "Properties" : {
@@ -656,7 +568,7 @@
                                             "\", \"Machine\")\n",
                                             "[Environment]::SetEnvironmentVariable(\"q-dns\", \"",
                                             {
-                                                "Ref" : "webPortAddress"
+                                                "Ref" : "ElasticIp"
                                             },
                                             "\", \"Machine\")\n",
                                             "[Environment]::SetEnvironmentVariable(\"q-db-sys-username\", \"",
@@ -1081,9 +993,6 @@
                         "/evaluate"
                     ]
                 ]
-            },
-            "Export"      : {
-                "Name" : "E4AC-Url"
             }
         },
         "TlmUrl"      : {
@@ -1101,9 +1010,6 @@
                         "/tlm"
                     ]
                 ]
-            },
-            "Export"      : {
-                "Name" : "E4AC-Tlm-Url"
             }
         },
         "ClusterStatusUrl" : {
@@ -1118,12 +1024,9 @@
                                 "PublicDnsName"
                             ]
                         },
-                        "/tlm"
+                        "/status"
                     ]
                 ]
-            },
-            "Export"      : {
-                "Name" : "E4AC-status-Url"
             }
         }
     }

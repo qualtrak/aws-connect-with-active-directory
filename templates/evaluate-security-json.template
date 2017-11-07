@@ -135,5 +135,15 @@
         }    
     },
     "Outputs"                  : {  
+        "ElasticIp" : {
+            "Value" : {
+                "Ref" : "webPortAddress"
+            }
+        },
+        "WebXFace" : {
+            "Value" : {
+                "Ref" : "webXface"
+            }
+        }
     }
 }

@@ -810,7 +810,10 @@
     "Outputs"                  : {
         "ESDomainEndpoint" : {
             "Value" : {
-                "Ref" : "ElasticsearchDomain"
+                "Fn::GetAtt" : [
+                    "ElasticsearchDomain",
+                    "DomainEndpoint"
+                ]
             }
         },
         "cidrBlock" : {

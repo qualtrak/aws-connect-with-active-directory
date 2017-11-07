@@ -63,8 +63,7 @@
                         "default" : "ElasticSearch Configuration"
                     },
                     "Parameters" : [
-                        "ESDomain",
-                        "cidrBlock"
+                        "ESDomain"
                     ]
                 }
             ],			 
@@ -128,9 +127,6 @@
                 },
                 "S3Bucket"      : {
                     "default" : "Where to write logs"
-                },
-                "cidrBlock"          : {
-                    "default" : "Allow access from"
                 },
                 "S3EvaluateBucket" : {
                     "default" : "Name of new bucket"
@@ -301,12 +297,6 @@
             "Type"    : "String",
             "Description" : "This is the name for the ElasticSearch Domain"
         },
-        "cidrBlock"          : {
-            "Description" : "VPC CIDR Block (eg 10.0.0.0/16) from which ElasticSearch can be accessed from",
-            "Type"        : "String",
-            "AllowedPattern" : "\\d{1,3}([.]\\d{1,3}){3}/\\d{1,2}",
-            "ConstraintDescription" : "Must not be empty and must be a CIDR block, 172.0.48.28/32"
-        },
         "S3Bucket"      : {
             "Description" : "The name of the S3 Bucket that Amazon Connect uses to store its call recordings",
             "Type"        : "String",
@@ -323,6 +313,25 @@
         }
     },  
     "Resources": {
+        "ec2securitystack": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": "http://s3.amazonaws.com/Qualtrak/submodules/quickstart-qualtrak-e4ac/templates/evaluate-security-json.template"
+                },
+                "Parameters": {                    
+                    "RDPFrom": {
+                        "Ref": "RDPFrom"
+                    },
+                    "VpcId": {
+                        "Ref": "VpcId"
+                    },
+                    "SubnetId": {
+                        "Ref": "SubnetId"
+                    }
+                }
+            }
+        },   
         "evaluatestack": {
             "DependsOn": "connectstack",
             "Type": "AWS::CloudFormation::Stack",
@@ -390,12 +399,25 @@
                     },
                     "S3EvaluateBucket" : {
                         "Ref" : "S3EvaluateBucket"
+                    },
+                    "webXface" : {
+                        "Fn::GetAtt": [
+                            "ec2securitystack",
+                            "Outputs.WebXFace"
+                        ]
+                    },
+                    "ElasticIp" : {
+                        "Fn::GetAtt": [
+                            "ec2securitystack",
+                            "Outputs.ElasticIp"
+                        ]
                     }
                 }
             }
         },
         "connectstack": {
             "Type": "AWS::CloudFormation::Stack",
+            "DependsOn": "ec2securitystack",
             "Properties": {
                 "TemplateURL": {
                     "Fn::Sub": "http://s3.amazonaws.com/Qualtrak/submodules/quickstart-qualtrak-e4ac/templates/amazonconnect-json.template"
@@ -411,7 +433,18 @@
                         "Ref": "ESDomain"
                     },
                     "cidrBlock": {
-                        "Ref": "cidrBlock"
+                        "Fn::Join" : [
+                            "",
+                            [
+                                {"Fn::GetAtt": 
+                                    [
+                                        "ec2securitystack",
+                                        "Outputs.ElasticIp"
+                                    ]
+                                },
+                                "/32"
+                            ]
+                        ]
                     },
                     "S3Bucket": {
                         "Ref": "S3Bucket"
@@ -419,5 +452,52 @@
                 }
             }
         }              
+    },
+    "Outputs"                  : {
+        "PrivateIp" : {
+            "Description" : "Private Ip Address",
+            "Value"       : {
+                "Fn::GetAtt" : [
+                    "evaluatestack",
+                    "Outputs.PrivateIp"
+                ]
+            }
+        },
+        "PublicIp"  : {
+            "Description" : "Public Ip Address",
+            "Value"       : {
+                "Fn::GetAtt" : [
+                    "evaluatestack",
+                    "Outputs.PublicIp"
+                ]
+            }
+        },
+        "EvaluateUrl" : {
+            "Description" : "Url for Evaluate for Amazon Connect web application (Active Directory)",
+            "Value"       : {
+                "Fn::GetAtt" : [
+                    "evaluatestack",
+                    "Outputs.EvaluateUrl"
+                ]                               
+            }
+        },
+        "TlmUrl"      : {
+            "Description" : "Url for Tenant Management System web application (Windows Authentication)",
+            "Value"       : {
+                "Fn::GetAtt" : [
+                    "evaluatestack",
+                    "Outputs.TlmUrl"
+                ]    
+            }
+        },
+        "ClusterStatusUrl" : {
+            "Description" : "Url for Cluster Status web application (Windows Authentication)",
+            "Value"       : {
+                "Fn::GetAtt" : [
+                    "evaluatestack",
+                    "Outputs.ClusterStatusUrl"
+                ]   
+            }
+        }
     }
 }
