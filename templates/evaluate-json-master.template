@@ -52,8 +52,7 @@
                     "Label" : {
                         "default" : "Amazon Connect Configuration"
                     },
-                    "Parameters" : [                        
-                        "kinesisStreamRole",
+                    "Parameters" : [      
                         "S3Bucket",
                         "kinesisStream"
                     ]
@@ -118,9 +117,6 @@
                 },
                 "kinesisStream" : {
                     "default" : "Which Stream to use"
-                },
-                "kinesisStreamRole" : {
-                    "default" : "Which Role to use"
                 },
                 "ESDomain"      : {
                     "default" : "What name to use"
@@ -286,12 +282,6 @@
             "Description" : "The name of your existing Kinesis Stream",
             "ConstraintDescription" : "Must not be empty and must contain only alphanumeric characters"
         },
-        "kinesisStreamRole" : {
-            "Type" : "String",
-            "AllowedPattern" : "[a-zA-Z0-9].*",
-            "Description" : "The name of your existing Kinesis Stream Role",
-            "ConstraintDescription" : "Must not be empty and must contain only alphanumeric characters"
-        },
         "ESDomain"      : {
             "Default" : "evaluate",
             "Type"    : "String",
@@ -425,9 +415,6 @@
                 "Parameters": {                    
                     "kinesisStream": {
                         "Ref": "kinesisStream"
-                    },
-                    "kinesisStreamRole": {
-                        "Ref": "kinesisStreamRole"
                     },
                     "ESDomain": {
                         "Ref": "ESDomain"

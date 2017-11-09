@@ -6,10 +6,6 @@
             "Type" : "String",
             "Description" : "The name of your existing Kinesis Stream"
         },
-        "kinesisStreamRole" : {
-            "Type" : "String",
-            "Description" : "The name of your existing Kinesis Stream Role"
-        },
         "ESDomain"      : {
             "Type"    : "String",
             "Description" : "This is the name for the ElasticSearch Domain"
@@ -34,7 +30,6 @@
                     },
                     "Parameters" : [
                         "kinesisStream",
-                        "kinesisStreamRole",
                         "S3Bucket"
                     ]
                 },
@@ -52,9 +47,6 @@
                 "kinesisStream" : {
                     "default" : "Which Stream to use?"
                 },
-                "kinesisStreamRole" : {
-                    "default" : "Which Role to use?"
-                },
                 "ESDomain"      : {
                     "default" : "What name to use?"
                 },
@@ -70,6 +62,57 @@
     "Conditions"               : {
     },
     "Resources"                : {
+        "FirehoseRole"        : {
+            "Type" : "AWS::IAM::Role",            
+            "Properties" : {
+                "AssumeRolePolicyDocument" : {
+                    "Version" : "2012-10-17",
+                    "Statement" : [
+                        {
+                            "Effect" : "Allow",
+                            "Principal" : {
+                                "Service" : "firehose.amazonaws.com"
+                            },
+                            "Action"    : "sts:AssumeRole",
+                            "Condition" : {
+                                "StringEquals" : {
+                                    "sts:ExternalId" : {
+                                        "Ref" : "AWS::AccountId"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "KinesisStreamPolicy"       : {
+            "Type" : "AWS::IAM::Policy",
+            "DependsOn" : "FirehoseRole",
+            "Properties" : {
+                "Roles" : [
+                    {
+                        "Ref" : "FirehoseRole"
+                    }
+                ],
+                "PolicyName" : "KinesisStreamPolicy",
+                "PolicyDocument" : {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "kinesis:*",
+                            "Resource": "*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": "firehose:*",
+                            "Resource": "*"
+                        }
+                    ]
+                }
+            }
+        },
         "DeliveryStream" : {
             "Type" : "AWS::Logs::LogGroup",
             "Properties" : {
@@ -182,31 +225,7 @@
                 }
             }
         },
-        "FirehoseRole"        : {
-            "Type" : "AWS::IAM::Role",
-            "DependsOn" : "ElasticsearchDomain",
-            "Properties" : {
-                "AssumeRolePolicyDocument" : {
-                    "Version" : "2012-10-17",
-                    "Statement" : [
-                        {
-                            "Effect" : "Allow",
-                            "Principal" : {
-                                "Service" : "firehose.amazonaws.com"
-                            },
-                            "Action"    : "sts:AssumeRole",
-                            "Condition" : {
-                                "StringEquals" : {
-                                    "sts:ExternalId" : {
-                                        "Ref" : "AWS::AccountId"
-                                    }
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        },
+    
         "S3LambdaElasticsearchPolicy" : {
             "Type" : "AWS::IAM::Policy",
             "DependsOn" : "FirehoseRole",
@@ -695,6 +714,7 @@
                 }
             }
         },
+     
         "ESStream"                    : {
             "Type" : "AWS::KinesisFirehose::DeliveryStream",
             "DependsOn" : "ElasticsearchDomain",
@@ -730,7 +750,7 @@
                                 },
                                 ":role/",
                                 {
-                                    "Ref" : "kinesisStreamRole"
+                                    "Ref" : "FirehoseRole"
                                 }
                             ]
                         ]
