@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion" : "2010-09-09",
-    "Description"              : "This template creates a EC2 instance with SQL Server Express Edition that is to be used with the Qualtrak DevTest CI/CD environment",
+    "Description"              : "This template creates an EC2 instance, an MSSQL Express Edition RDS instance and an S3 Bucket",
     "Parameters"               : {
         "RetainEvaluateS3" : {
             "Description" : "After you have deleted this Stack, do you want to retain or delete the Evaluate S3 where all your Evaluation Attachments are stored?",
